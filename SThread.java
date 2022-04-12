@@ -21,7 +21,7 @@ public class SThread extends Thread
         out = new PrintWriter(toClient.getOutputStream(), true);
         in = new BufferedReader(new InputStreamReader(toClient.getInputStream()));
         RTable = Table;
-        addr = toClient.getInetAddress().getHostAddress();
+        addr =  toClient.getInetAddress().getHostAddress();
         RTable[index][0] = addr; // IP addresses
         RTable[index][1] = toClient; // sockets for communication
         ind = index;

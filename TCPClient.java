@@ -53,13 +53,18 @@ public class TCPClient
         String address = "192.168.0.101"; // destination IP (Server) - laptop
 
         // Communication process (initial sends/receives)
-        out.println(address); // initial send (IP of the destination Server)
-        fromServer = in.readLine(); // initial receive from router (verification of connection)
-        System.out.println("ServerRouter: " + fromServer);
+        //out.println(address); // initial send (IP of the destination Server)
+        out.println("5554");
+        String rcvdAddr = in.readLine();
+        int rcvdPort = Integer.parseInt(in.readLine());
+        Socket.close();
+
+        Socket outSocket = new Socket(rcvdAddr, rcvdPort);
+        out = new PrintWriter(outSocket.getOutputStream(), true);
+        in = new BufferedReader(new InputStreamReader(outSocket.getInputStream()));
 
         String rtTime = "";
         fromServer = in.readLine(); // receive RTTime
-        System.out.println("ServerRouter: " + fromServer);
         if (fromServer.startsWith("!RTTime"))
         {
             rtTime = fromServer.substring(9);
@@ -131,16 +136,9 @@ public class TCPClient
         }
         else
         {
-            //String rtTime = "";
-
             // Receive first message (server's host) from server
             while ((fromServer = in.readLine()) != null)
             {
-                /*if(fromServer.startsWith("!RTTime"))
-                {
-                    rtTime = fromServer.substring(9);
-                }*/
-
                 System.out.println("Server: " + fromServer);
                 break;
             }
@@ -189,7 +187,9 @@ public class TCPClient
         }
 
         System.out.println("Closing connection.");
+
         // closing connections
+        outSocket.close();
         out.close();
         in.close();
         Socket.close();
