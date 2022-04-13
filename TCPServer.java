@@ -12,7 +12,7 @@ public class TCPServer
         InetAddress addr = InetAddress.getLocalHost();
         String host = addr.getHostAddress(); // Server machine's IP
         String routerName = "192.168.0.100"; // ServerRouter host name - Raspberry Pi
-        int SockNum = 5555; // port number
+        int SockNum = 5556; // port number
 
         // Tries to connect to the ServerRouter
         try
@@ -38,6 +38,14 @@ public class TCPServer
         String address = "192.168.0.103"; // destination IP (Client) - desktop
 
         // Communication process (initial sends/receives)
+        out.println(5557);
+        Socket.close();
+
+        ServerSocket inSocket = new ServerSocket(5557);
+        Socket = inSocket.accept();
+        in = new BufferedReader(new InputStreamReader(Socket.getInputStream()));
+        out = new PrintWriter(Socket.getOutputStream(), true);
+
         out.println(address); // initial send (IP of the destination Client)
         fromClient = in.readLine(); // initial receive from router (verification of connection)
         System.out.println("ServerRouter: " + fromClient);
@@ -113,6 +121,7 @@ public class TCPServer
 
         System.out.println("Closing connection.");
         // closing connections
+        inSocket.close();
         out.close();
         in.close();
         Socket.close();

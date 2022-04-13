@@ -71,6 +71,7 @@ public class TCPServerRouter
 
                 clientPR.println(newAddr);
                 clientPR.println(newPort);
+                clientSocket.close();
 
                 //SThread t = new SThread(RoutingTable, clientSocket, ind); // creates a thread with a random port
                 //t.start(); // starts the thread
