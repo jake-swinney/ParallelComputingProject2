@@ -1,5 +1,4 @@
 // One TCPServerRouter should be on port 5555 and the other on port 5556.
-// If swapping, make sure to update otherRouterIP, otherRouterPort, and port.
 
 import java.net.*;
 import java.io.*;
@@ -7,20 +6,39 @@ import java.io.*;
 public class TCPServerRouter
 {
 	public static final int ROUTING_SIZE = 100;
-	public static final String otherRouterIP = "127.0.0.1";
-	public static final int otherRouterPort = 5555;
-	
-	public static Object[][] RoutingTable = new Object[100][2];
-	public static int routingCount = 0;
 	
     public static void main(String[] args) throws IOException
     {
-        Socket clientSocket = null; // socket for the thread
-        //Object[][] RoutingTable = new Object[ROUTING_SIZE][2]; // routing table
-        int port = 5556; // port number
-        boolean Running = true;
+        // Port number for this router and information for other router
+        int port = 5555;
+        String otherRouterAddress = "127.0.0.1";
+        int otherRouterPort = 5556;
+        
+        // Parse arguments for port and other router port/address if given
+        if (args.length == 0)
+        {
+            System.out.println("Using defaults.");
+        }
+        else if (args.length == 3)
+        {
+            try
+            {
+                port = Integer.parseInt(args[0]);
+                otherRouterPort = Integer.parseInt(args[2]);
+            }
+            catch (NumberFormatException e)
+            {
+                System.err.println("Arguments: [port] [other router address] [other router port]");
+                System.exit(1);
+            }
+            otherRouterAddress = args[1];
+        }
+        
+        // Routing table and information
+        Object[][] RoutingTable = new Object[ROUTING_SIZE][2];
         int firstEntry = 0;
-        int lastEntry = 0; // highest index in the routing table
+        int lastEntry = 0;
+        int routingCount = 0;
 
         //Accepting connections
         ServerSocket serverSocket = null; // server socket for accepting connections
@@ -34,9 +52,15 @@ public class TCPServerRouter
             System.err.println("Could not listen on port: " + port + ".");
             System.exit(1);
         }
+        
+        System.out.println("Other ServerRouter will be located at " + otherRouterAddress + ":" + otherRouterPort);
+        System.out.println();
 
+        Socket clientSocket = null; // socket for a client that connects to this server
+        boolean running = true;
+        
         // Creating threads with accepted connections
-        while (Running)
+        while (running)
         {
             try
             {
@@ -80,8 +104,8 @@ public class TCPServerRouter
                 else if (message.equals("Sender"))
                 {
                 	// Connect to other server router and send "Lookup"
-                	System.out.println("Connecting to ServerRouter at " + otherRouterIP + ":" + otherRouterPort);
-                	Socket otherRouter = new Socket(otherRouterIP, otherRouterPort);
+                	System.out.println("Connecting to ServerRouter at " + otherRouterAddress + ":" + otherRouterPort);
+                	Socket otherRouter = new Socket(otherRouterAddress, otherRouterPort);
 
                     BufferedReader inOther = new BufferedReader(new InputStreamReader(otherRouter.getInputStream()));
                     PrintWriter outOther = new PrintWriter(new OutputStreamWriter(otherRouter.getOutputStream()), true);
@@ -109,7 +133,7 @@ public class TCPServerRouter
                 		String response = RoutingTable[firstEntry][0] + ":" + RoutingTable[firstEntry][1];
                 		
                 		firstEntry++;
-                		routingCount --;
+                		routingCount--;
 
                 		System.out.println("ServerRouter Response: " + response);
                 		out.println(response);
@@ -145,7 +169,6 @@ public class TCPServerRouter
         }//end while
 
         //closing connections
-        //clientSocket.close();
         serverSocket.close();
     }
 }
