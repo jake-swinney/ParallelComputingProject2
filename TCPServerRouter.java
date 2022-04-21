@@ -6,14 +6,14 @@ import java.io.*;
 public class TCPServerRouter
 {
 	public static final int ROUTING_SIZE = 100;
-	
+
     public static void main(String[] args) throws IOException
     {
         // Port number for this router and information for other router
         int port = 5555;
         String otherRouterAddress = "127.0.0.1";
         int otherRouterPort = 5556;
-        
+
         // Parse arguments for port and other router port/address if given
         if (args.length == 0)
         {
@@ -33,12 +33,15 @@ public class TCPServerRouter
             }
             otherRouterAddress = args[1];
         }
-        
+
         // Routing table and information
         Object[][] RoutingTable = new Object[ROUTING_SIZE][2];
         int firstEntry = 0;
         int lastEntry = 0;
         int routingCount = 0;
+        int receiverStartPort = port + 2;
+        int nextReceiverPort = receiverStartPort;
+        int maxReceiverPort = port + ROUTING_SIZE;
 
         //Accepting connections
         ServerSocket serverSocket = null; // server socket for accepting connections
@@ -52,48 +55,69 @@ public class TCPServerRouter
             System.err.println("Could not listen on port: " + port + ".");
             System.exit(1);
         }
-        
+
         System.out.println("Other ServerRouter will be located at " + otherRouterAddress + ":" + otherRouterPort);
         System.out.println();
 
         Socket clientSocket = null; // socket for a client that connects to this server
         boolean running = true;
-        
+
         // Creating threads with accepted connections
         while (running)
         {
             try
             {
                 clientSocket = serverSocket.accept();
-                
+
                 System.out.println("Received connection from " + clientSocket.getInetAddress().getHostAddress());
-                
+
                 BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()), true);
                 String message = in.readLine();
-                
+
                 System.out.println("Message Received: " + message);
-                
+
                 if (message.equals("Receiver"))
                 {
                 	if (routingCount < ROUTING_SIZE)
                 	{
                     	// Set the port that the receiver will use, based on ServerRouter's port and index in routing table
-                    	int receiverPort = port + lastEntry + 1;
-                    	
-                    	// Add the receiver to the routing table
-                    	RoutingTable[lastEntry][0] = clientSocket.getInetAddress().getHostAddress();
-                    	RoutingTable[lastEntry][1] = receiverPort;
-                    	
-                    	// Increment the routing count and update the last index
-                    	lastEntry = (lastEntry + 1) % ROUTING_SIZE;
-                    	routingCount++;
-                    	
+                    	int receiverPort = nextReceiverPort; //port + lastEntry + 1;
+
+                        // Port has been attempted to be assigned to server; move to next port
+                    	nextReceiverPort++;
+                    	if (nextReceiverPort > maxReceiverPort)
+                            nextReceiverPort = receiverStartPort; // port is the same as this router's port again
+
                     	String response = receiverPort + "";
                     	System.out.println("ServerRouter Response: " + response);
                     	out.println(response);
-                    	
-                		System.out.println("Routing table entries: " + routingCount);
+
+                    	// Receive confirmation that server started
+                    	message = in.readLine();
+                        System.out.println("Message Received: " + message);
+
+                    	if (message.equals("Success."))
+                    	{
+                            // Add the receiver to the routing table
+                            RoutingTable[lastEntry][0] = clientSocket.getInetAddress().getHostAddress();
+                            RoutingTable[lastEntry][1] = receiverPort;
+
+                            // Increment the routing count and update the last index
+                            lastEntry = (lastEntry + 1) % ROUTING_SIZE;
+                            routingCount++;
+
+                            System.out.println("Routing table entries: " + routingCount);
+
+                            System.out.println("ServerRouter Response: Added.");
+                            out.println("Added.");
+                    	}
+                    	else
+                    	{
+                            System.out.println("Receiver on port " + receiverPort + " failed.");
+                            System.out.println("ServerRouter Response: Bye.");
+                            out.println("Bye.");
+                    	}
                 	}
                 	else
                 	{
@@ -112,13 +136,13 @@ public class TCPServerRouter
 
                     System.out.println("Message to ServerRouter: Lookup");
                     outOther.println("Lookup");
-                    
+
                     // Receive response from other server router and send it back to client
                     String response = inOther.readLine();
                     System.out.println("Message from ServerRouter: " + response);
                     out.println(response);
                     System.out.println("Forwarded to Client: " + response);
-                    
+
                     // Close when finished
                     inOther.close();
                     outOther.close();
@@ -131,13 +155,13 @@ public class TCPServerRouter
                 	{
                 		// Send back the IP address and port number of the client and remove it from the routing table
                 		String response = RoutingTable[firstEntry][0] + ":" + RoutingTable[firstEntry][1];
-                		
+
                 		firstEntry++;
                 		routingCount--;
 
                 		System.out.println("ServerRouter Response: " + response);
                 		out.println(response);
-                		
+
                 		System.out.println("Routing table entries: " + routingCount);
                 	}
                 	else
@@ -147,14 +171,14 @@ public class TCPServerRouter
                 		System.out.println("ServerRouter Response: NO_RECEIVER_AVAILABLE");
                 	}
                 }
-                
+
                 System.out.println();
-                
+
                 // Close when finished
                 in.close();
                 out.close();
                 clientSocket.close();
-                
+
                 /*SThread t = new SThread(RoutingTable, clientSocket, ind); // creates a thread with a random port
                 t.start(); // starts the thread
                 ind++; // increments the index

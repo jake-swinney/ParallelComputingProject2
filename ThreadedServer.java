@@ -4,12 +4,12 @@ import java.net.*;
 class ServerThread extends Thread
 {
     private int threadNumber;
-    
+
     public ServerThread(int threadNumber)
     {
         this.threadNumber = threadNumber;
     }
-    
+
     public void run()
     {
         System.out.println("Starting server thread " + threadNumber);
@@ -22,13 +22,13 @@ class ServerThread extends Thread
             System.out.println("Uncaught IOException occurred in thread " + threadNumber);
         }
     }
-    
+
     public void runServer() throws IOException
     {
         String routerName = "127.0.0.1"; // ServerRouter host name
         int routerPort = 5556; // port number
         String downloadDir = "downloads/"; // directory to save downloaded A/V files
-        
+
         // Variables for setting up connection and communication
         Socket socket = null; // socket to connect with ServerRouter
         BufferedReader in = null; // for reading from ServerRouter
@@ -51,28 +51,23 @@ class ServerThread extends Thread
             System.err.println("Couldn't get I/O for the connection to: " + routerName);
             return;
         }
-        
+
         // Once a connection is established to the ServerRouter, state whether this is a Sender or Receiver
         System.out.println("Message to ServerRouter: Receiver");
         out.println("Receiver");
-        
+
         // Response is the port number that the server will listen on
         String response = in.readLine();
         System.out.println("Response from ServerRouter: " + response);
-        
+
         if (response.equals("ROUTING_TABLE_FULL"))
         {
         	System.out.println("Sender client could not connect; routing table was full. Exiting.");
         	return;
         }
-        
+
         int receiverPort = Integer.parseInt(response);
-        
-        // Communication with ServerRouter finished
-        in.close();
-        out.close();
-        socket.close();
-        
+
         // Start a server socket to listen for a client
         ServerSocket serverSocket =  null;
         try
@@ -83,9 +78,34 @@ class ServerThread extends Thread
         catch (IOException e)
         {
             System.err.println("Could not listen on port " + receiverPort);
+            System.out.println("Message to ServerRouter: Failed.");
+            out.println("Failed.");
+            response = in.readLine();
+            System.out.println("Response from ServerRouter: " + response);
             return;
         }
-        
+
+        // Server socket opened successfully - communicate this to ServerRouter
+        System.out.println("Message to ServerRouter: Success.");
+        out.println("Success.");
+        response = in.readLine();
+        System.out.println("Response from ServerRouter: " + response);
+
+        // Communication with ServerRouter finished
+        in.close();
+        out.close();
+        socket.close();
+
+        if (response.equals("Added."))
+        {
+            System.out.println("Waiting for connection from client...");
+        }
+        else
+        {
+            System.out.println("Unexpected response from ServerRouter. Exiting.");
+            return;
+        }
+
         // Accept the first client and close the server socket
         try
         {
@@ -98,9 +118,9 @@ class ServerThread extends Thread
             serverSocket.close();
             return;
         }
-        
+
         serverSocket.close();
-        
+
         // Make new reader/writer for message passing with sender client
         out = new PrintWriter(socket.getOutputStream(), true);
         in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -120,7 +140,7 @@ class ServerThread extends Thread
                 System.out.println("Server: Bye.");
                 out.println("Bye.");
                 break;
-                
+
             }
             else if (fromClient.startsWith("!FILENAME:"))
             {
@@ -141,7 +161,7 @@ class ServerThread extends Thread
                 // Get the number of bytes from the string first
                 String numBytesStr = fromClient.substring(7);
                 int numBytes = Integer.parseInt(numBytesStr);
-                
+
                 System.out.println("Server: Ready.");
                 out.println("Ready.");
 
@@ -207,7 +227,7 @@ public class ThreadedServer
         {
             System.err.println("Expected up to one argument: [number of server threads]");
         }
-        
+
         for (int i = 0; i < numServers; i++)
         {
             ServerThread t = new ServerThread(i);
