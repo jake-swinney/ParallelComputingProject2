@@ -278,10 +278,20 @@ public class ThreadedClient
 {
     public static void main(String[] args)
     {
-        ClientThread t = new ClientThread(1, "text_tests/text3.txt");
-        ClientThread t2 = new ClientThread(2, "text_tests/text4.txt");
-        t.start();
-        t2.start();
+        File dir = new File(args[0]);
+
+        if(!dir.isDirectory())
+        {
+            System.out.println("Folder could not be opened");
+            System.exit(1);
+        }
+
+        File[] files = dir.listFiles();
+        for(int i = 0; i < files.length; i++)
+        {
+            ClientThread t = new ClientThread(i + 1, files[i].getPath());
+            t.start();
+        }
     }
     
     public static synchronized void writeTextData(int threadNumber, String fileName, long fileSize, int avgMsgSize, long avgMsgTime, long lookupTime)
